@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Tuleloverseny csapat tartozkodasi helyek</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tailwindcss/ui@latest/dist/tailwind-ui.min.css">
+
+    <link rel="stylesheet" href="https://tuleloverseny.hu/graphics/leaflet/leaflet.styledlayercontrol/css/styledLayerControl.css" />
+    <script src="https://tuleloverseny.hu/graphics/leaflet/leaflet.styledlayercontrol/src/styledLayerControl.js"></script>
+
+    <link rel="stylesheet" href="https://tuleloverseny.hu/graphics/leaflet/leaflet.coordinates/src/Control.Coordinates.css" />
+    <script src="https://tuleloverseny.hu/graphics/leaflet/leaflet.coordinates/src/Control.Coordinates.js"></script>
+
+    <script src="https://tuleloverseny.hu/graphics/leaflet/leaflet-control-custom/Leaflet.Control.Custom.js"></script>
+
+    <link rel="stylesheet" href="https://tuleloverseny.hu/graphics/leaflet/leaflet-search/src/leaflet-search.css" />
+    <script src="https://tuleloverseny.hu/graphics/leaflet/leaflet-search/src/leaflet-search.js"></script>
+
+    <style>
+      html, body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+      .leaflet-map-pane{
+         z-index: 100;
+      }
+      .leaflet-control-coordinates .uiElement .labelFirst {
+         margin-right: 0px;
+      }
+    </style>
+  </head>
+  <body>
+<div id="map"></div>
+<script>
+// +++++ Itt definiáljuk a különböző színű marker ikonokat a térképen való megjelenítéshez
+var blueIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+var greenIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+var redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+// +++++ Itt inicializáljuk a térképet, beállítjuk a középpontot és hozzáadjuk a skálát
+	var map = L.map('map').setView([47.493915, 19.062294], 13);
+	      L.control.scale().addTo(map);
+// +++++ Itt definiáljuk a különböző térképrétegeket (tile layers), mint Turistautak, OpenTopoMap stb.
+	      var tuUrl='https://{s}.map.turistautak.hu/tiles/turistautak/{z}/{x}/{y}.png';
+	      var tuAttrib='&copy; <a href="http://turistautak.hu">Turistautak.hu</a>';
+	      var tuSubDomains = 'abcd';
+	      var tuMaxZoom = 21;
+	      var tu = new L.TileLayer(tuUrl, {attribution: tuAttrib}, {attribution: tuAttrib}, {subdomains: tuSubDomains}, {maxZoom: tuMaxZoom});
+				var otmUrl='https://a.tile.opentopomap.org/{z}/{x}/{y}.png';
+				var otmAttrib='&copy; <a href="https://www.opentopomap.org/copyright">OpenTopoMap</a> contributors';
+				var otm = new L.TileLayer(otmUrl, {attribution: otmAttrib});
+				var osmUrl='http://{s}.tile.osm.org/{z}/{x}/{y}.png';
+				var osmAttrib='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+				var osm = new L.TileLayer(osmUrl, {attribution: osmAttrib});
+				var tfUrl='http://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=c00a97c42289402f8e05561fb3244e47';
+				var tfAttrib='&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+				var tf = new L.TileLayer(tfUrl, {attribution: tfAttrib});
+				var tfpUrl='http://tile.thunderforest.com/pioneer/{z}/{x}/{y}.png?apikey=c00a97c42289402f8e05561fb3244e47';
+				var tfpAttrib='&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+				var tfp = new L.TileLayer(tfpUrl, {attribution: tfpAttrib});
+				var tfmUrl='http://tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?apikey=c00a97c42289402f8e05561fb3244e47';
+				var tfmAttrib='&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+				var tfm = new L.TileLayer(tfmUrl, {attribution: tfmAttrib});
+				var esrisatUrl='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+				var esrisatAttrib='Tiles &copy; Esri &mdash; Source: Esri, Earthstar Geographics';
+				var esrisat = new L.TileLayer(esrisatUrl, {attribution: esrisatAttrib});
+				var esritUrl='https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
+				var esritAttrib='Tiles &copy; Esri &mdash; Source: Esri, Earthstar Geographics';
+				var esrit = new L.TileLayer(esritUrl, {attribution: esritAttrib});
+				var esrisUrl='https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+				var esrisAttrib='Tiles &copy; Esri &mdash; Source: Esri, Earthstar Geographics';
+				var esris = new L.TileLayer(esrisUrl, {attribution: esrisAttrib});
+				var cycloUrl='https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
+				var cycloAttrib='&copy; <a href="https://www.cyclosm.org">CyclOSM</a>, OpenStreetMap contributors';
+				var cyclo = new L.TileLayer(cycloUrl, {attribution: cycloAttrib});
+				var tpocUrl='http://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web/default/WEBMERCATOR/{z}/{y}/{x}.png';
+				var tpocAttrib='Map data: &copy; <a href="http://www.govdata.de/dl-de/by-2-0">dl-de/by-2-0</a>';
+				var tpoc = new L.TileLayer(tpocUrl, {attribution: tpocAttrib});
+				var tpogUrl='http://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web_grau/default/WEBMERCATOR/{z}/{y}/{x}.png';
+				var tpogAttrib='Map data: &copy; <a href="http://www.govdata.de/dl-de/by-2-0">dl-de/by-2-0</a>';
+				var tpog = new L.TileLayer(tpogUrl, {attribution: tpogAttrib});
+				var cdblUrl='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+				var cdblAttrib='&copy; <a href="https://carto.com/">CARTO</a>';
+				var cdbl = new L.TileLayer(cdblUrl, {attribution: cdblAttrib});
+				var cdblnUrl='https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png';
+				var cdblnAttrib='&copy; <a href="https://carto.com/">CARTO</a>';
+				var cdbln = new L.TileLayer(cdblnUrl, {attribution: cdblnAttrib});
+				var cdbdUrl='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+				var cdbdAttrib='&copy; <a href="https://carto.com/">CARTO</a>';
+				var cdbd = new L.TileLayer(cdbdUrl, {attribution: cdbdAttrib});
+// +++++ Itt létrehozzuk a különböző layer csoportokat a tereppontok és csapatok számára
+	     var nagyhalal_tp = new L.LayerGroup();
+	     var kozephalal_tp = new L.LayerGroup();
+	     var kishalal_tp = new L.LayerGroup();
+	     var allMarkers = L.featureGroup();
+	     allMarkers.addTo(map);
+var NH_data = [
+];
+var kh_data = [
+       {"loc":[46.920469,17.853847], "title":"<B>O.M.V.H</B><BR>Kaszáló szélén felújított középkori templom<BR><BR><B>NH:</B> 34<BR><B>Kh:</B> <BR><B>kh:</B> 53<BR><BR>[TE56-B01-01]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-01.jpg'>"},
+       {"loc":[46.918817,17.845824], "title":"<B>Töréspont</B><BR>Dupla lábú villanyoszlop<BR><BR><B>NH:</B> 11<BR><B>Kh:</B> <BR><B>kh:</B> 55<BR><BR>[TE56-B01-02]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-02.jpg'>"},
+       {"loc":[46.912494,17.848477], "title":"<B>Túrórudi</B><BR>Nádasba vezető ösvény végén kapu mögött tábla<BR><BR><B>NH:</B> 26<BR><B>Kh:</B> <BR><B>kh:</B> 6<BR><BR>[TE56-B01-03]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-03.jpg'>"},
+       {"loc":[46.908896,17.849773], "title":"<B>Huzatos</B><BR>Út mellett fa pavilon<BR><BR><B>NH:</B> 100<BR><B>Kh:</B> <BR><B>kh:</B> 16<BR><BR>[TE56-B01-04]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-04.jpg'>"},
+       {"loc":[46.903065,17.851744], "title":"<B>A tó kialakulása</B><BR>Információs tábla<BR><BR><B>NH:</B> 115<BR><B>Kh:</B> <BR><B>kh:</B> 101<BR><BR>[TE56-B01-05]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-05.jpg'>"},
+       {"loc":[46.902182,17.854313], "title":"<B>Jobb sorsra érdemes</B><BR>Sétaút mellett bozótban megbúvó kőlak<BR><BR><B>NH:</B> 8<BR><B>Kh:</B> <BR><B>kh:</B> 59<BR><BR>[TE56-B01-06]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-06.jpg'>"},
+       {"loc":[46.902131,17.856693], "title":"<B>Azért a víz az úr!</B><BR>Meredek mederbe telepített dupla rőzsegát<BR><BR><B>NH:</B> 69<BR><B>Kh:</B> <BR><B>kh:</B> 75<BR><BR>[TE56-B01-07]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-07.jpg'>"},
+       {"loc":[46.900004,17.860388], "title":"<B>Idős tölgyek dicsősége</B><BR>Tábla mögött bibircsókos öreg tölgy<BR><BR><B>NH:</B> 54<BR><B>Kh:</B> <BR><B>kh:</B> 81<BR><BR>[TE56-B01-08]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-08.jpg'>"},
+       {"loc":[46.899811,17.866054], "title":"<B>Ki a csoda jár oda?</B><BR>Kerítés előtt fa torzó<BR><BR><B>NH:</B> 53<BR><B>Kh:</B> <BR><B>kh:</B> 68<BR><BR>[TE56-B01-09]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-09.jpg'>"},
+       {"loc":[46.898438,17.869789], "title":"<B>65</B><BR>Jellegtelen csúcs alatt kidőlt száraz fa mellett határkaró<BR><BR><B>NH:</B> 1<BR><B>Kh:</B> <BR><B>kh:</B> 70<BR><BR>[TE56-B01-10]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-10.jpg'>"},
+       {"loc":[46.895617,17.870169], "title":"<B>Távolban egy fehér vitorla</B><BR>Kilátóterasszal szemben, az út túloldalán beton talapzat<BR><BR><B>NH:</B> 10<BR><B>Kh:</B> <BR><B>kh:</B> 65<BR><BR>[TE56-B01-11]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-11.jpg'>"},
+       {"loc":[46.889213,17.882393], "title":"<B>Fokozott kullancsveszély!</B><BR>Köves út elején táblakombináció<BR><BR><B>NH:</B> 30<BR><B>Kh:</B> <BR><B>kh:</B> 19<BR><BR>[TE56-B01-12]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-12.jpg'>"},
+       {"loc":[46.888868,17.891173], "title":"<B>Faun</B><BR>Part közelében zenélő ember alakú lény<BR><BR><B>NH:</B> 43<BR><B>Kh:</B> <BR><B>kh:</B> 113<BR><BR>[TE56-B01-13]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-13.jpg'>"},
+       {"loc":[46.888600,17.892506], "title":"<B>Garda</B><BR>Kő talapzaton halacska<BR><BR><B>NH:</B> 106<BR><B>Kh:</B> <BR><B>kh:</B> 74<BR><BR>[TE56-B01-14]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-14.jpg'>"},
+       {"loc":[46.889693,17.885333], "title":"<B>Újlaki</B><BR>Jelzett út mellett falmaradvány<BR><BR><B>NH:</B> 79<BR><B>Kh:</B> <BR><B>kh:</B> 8<BR><BR>[TE56-B01-15]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-15.jpg'>"},
+       {"loc":[46.891376,17.883072], "title":"<B>Zöldben zöld</B><BR>Útelágazásban kiöregedett fa tábla<BR><BR><B>NH:</B> 29<BR><B>Kh:</B> <BR><B>kh:</B> 82<BR><BR>[TE56-B01-16]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-16.jpg'>"},
+       {"loc":[46.892544,17.880183], "title":"<B>Esőbeálló</B><BR>Sziklaüreg mellett többjelzésű fa<BR><BR><B>NH:</B> 84<BR><B>Kh:</B> <BR><B>kh:</B> 103<BR><BR>[TE56-B01-17]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-17.jpg'>"},
+       {"loc":[46.891889,17.879313], "title":"<B>Pihenőcsúcs</B><BR>Csúcson csúcskő<BR><BR><B>NH:</B> 80<BR><B>Kh:</B> <BR><B>kh:</B> 115<BR><BR>[TE56-B01-18]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-18.jpg'>"},
+       {"loc":[46.893679,17.874587], "title":"<B>Pöcök</B><BR>Ösvényen alacsony magassági pont<BR><BR><B>NH:</B> 62<BR><B>Kh:</B> <BR><B>kh:</B> 76<BR><BR>[TE56-B01-19]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-19.jpg'>"},
+       {"loc":[46.893208,17.873550], "title":"<B>2x2</B><BR>Ösvény mellett kettesekkel jelzett fa<BR><BR><B>NH:</B> 66<BR><B>Kh:</B> <BR><B>kh:</B> 9<BR><BR>[TE56-B01-20]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-20.jpg'>"},
+       {"loc":[46.900368,17.860643], "title":"<B>Road Rats</B><BR>Panorámás nádtetős pihenő<BR><BR><B>NH:</B> 77<BR><B>Kh:</B> <BR><B>kh:</B> 88<BR><BR>[TE56-B01-21]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B01-21.jpg'>"},
+       {"loc":[46.921275,17.856341], "title":"<B>Őrtorony kilátó</B><BR>Parkoló szélén információs tábla<BR><BR><B>NH:</B> 81<BR><B>Kh:</B> <BR><B>kh:</B> 3<BR><BR>[TE56-B02-01]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-01.jpg'>"},
+       {"loc":[46.913499,17.853080], "title":"<B>Térjmegutca</B><BR>Zsákutca végén alacsony beton támfal<BR><BR><B>NH:</B> 74<BR><B>Kh:</B> <BR><B>kh:</B> 17<BR><BR>[TE56-B02-02]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-02.jpg'>"},
+       {"loc":[46.912235,17.855940], "title":"<B>Mutasd a lábad</B><BR>Hegytetőn fakilátó táblája<BR><BR><B>NH:</B> 13<BR><B>Kh:</B> <BR><B>kh:</B> 5<BR><BR>[TE56-B02-03]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-03.jpg'>"},
+       {"loc":[46.908730,17.860608], "title":"<B>Foglalt hely</B><BR>Fás, bokros réten tábla<BR><BR><B>NH:</B> 94<BR><B>Kh:</B> <BR><B>kh:</B> 36<BR><BR>[TE56-B02-04]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-04.jpg'>"},
+       {"loc":[46.908617,17.862222], "title":"<B>Rétiles</B><BR>Rét kiszögellésében fedetlen les<BR><BR><B>NH:</B> 59<BR><B>Kh:</B> <BR><B>kh:</B> 109<BR><BR>[TE56-B02-05]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-05.jpg'>"},
+       {"loc":[46.911036,17.860133], "title":"<B>TIHANY 2.</B><BR>Nedves tónak száraz partján kék kútfej<BR><BR><B>NH:</B> 68<BR><B>Kh:</B> <BR><B>kh:</B> 38<BR><BR>[TE56-B02-06]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-06.jpg'>"},
+       {"loc":[46.914260,17.857188], "title":"<B>Kopaszles</B><BR>Erdő szélén frizuráját vesztett les<BR><BR><B>NH:</B> 107<BR><B>Kh:</B> <BR><B>kh:</B> 52<BR><BR>[TE56-B02-07]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-07.jpg'>"},
+       {"loc":[46.918991,17.858696], "title":"<B>Akadálypálya</B><BR>Mély árok oldalában duplatörzsű lovaglófa<BR><BR><B>NH:</B> 12<BR><B>Kh:</B> <BR><B>kh:</B> 44<BR><BR>[TE56-B02-08]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-08.jpg'>"},
+       {"loc":[46.920359,17.858545], "title":"<B>Felszállott a páva</B><BR>Árkot átszelő sárga csőkígyó<BR><BR><B>NH:</B> 50<BR><B>Kh:</B> <BR><B>kh:</B> 60<BR><BR>[TE56-B02-09]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-09.jpg'>"},
+       {"loc":[46.916006,17.854223], "title":"<B>Félúton</B><BR>Erdő szélén sokszorosan jelzett fa<BR><BR><B>NH:</B> 19<BR><B>Kh:</B> <BR><B>kh:</B> 23<BR><BR>[TE56-B02-10]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-10.jpg'>"},
+       {"loc":[46.914753,17.854246], "title":"<B>Vadlányok</B><BR>Ösvény mellett részben panorámás sziklaplacc<BR><BR><B>NH:</B> 97<BR><B>Kh:</B> <BR><B>kh:</B> 98<BR><BR>[TE56-B02-11]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-11.jpg'>"},
+       {"loc":[46.911160,17.853065], "title":"<B>Graffitifa</B><BR>Megdőlt fenyő mögött monogramos fa<BR><BR><B>NH:</B> 27<BR><B>Kh:</B> <BR><B>kh:</B> 69<BR><BR>[TE56-B02-12]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-12.jpg'>"},
+       {"loc":[46.910674,17.852535], "title":"<B>Geomorfológia</B><BR>Keskeny ösvény mellett látványos sziklafal<BR><BR><B>NH:</B> 23<BR><B>Kh:</B> <BR><B>kh:</B> 89<BR><BR>[TE56-B02-13]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-13.jpg'>"},
+       {"loc":[46.908468,17.854044], "title":"<B>Levendulás mandulás</B><BR>Vadlevenduláson átvezető ösvény mentén zöld négyszöggel megjelölt kb. 1,3 m magas törzscsonk<BR><BR><B>NH:</B> 78<BR><B>Kh:</B> <BR><B>kh:</B> 93<BR><BR>[TE56-B02-14]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-14.jpg'>"},
+       {"loc":[46.908991,17.856322], "title":"<B>Mandulás levendulás</B><BR>Tanösvény információs táblája<BR><BR><B>NH:</B> 21<BR><B>Kh:</B> <BR><B>kh:</B> 95<BR><BR>[TE56-B02-15]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-15.jpg'>"},
+       {"loc":[46.906611,17.852432], "title":"<B>Csúcs ez az érzés</B><BR>Csúcson megdőlt irányjelző tábla<BR><BR><B>NH:</B> 46<BR><B>Kh:</B> <BR><B>kh:</B> 47<BR><BR>[TE56-B02-16]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-16.jpg'>"},
+       {"loc":[46.906496,17.852116], "title":"<B>Hévforrás</B><BR>Csúcs alatt barlanglakás<BR><BR><B>NH:</B> 104<BR><B>Kh:</B> <BR><B>kh:</B> 21<BR><BR>[TE56-B02-17]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-17.jpg'>"},
+       {"loc":[46.903799,17.853284], "title":"<B>Cerka</B><BR>Ösvény mellett hegyezett fehér fejű határkaró<BR><BR><B>NH:</B> 35<BR><B>Kh:</B> <BR><B>kh:</B> 67<BR><BR>[TE56-B02-18]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-18.jpg'>"},
+       {"loc":[46.904721,17.861706], "title":"<B>Vackorles</B><BR>Terebélyes fa mellett alacsony les<BR><BR><B>NH:</B> 38<BR><B>Kh:</B> <BR><B>kh:</B> 73<BR><BR>[TE56-B02-19]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-19.jpg'>"},
+       {"loc":[46.903827,17.868561], "title":"<B>Ennek már lőttek</B><BR>Fás gerincen elárvult sózó<BR><BR><B>NH:</B> 112<BR><B>Kh:</B> <BR><B>kh:</B> 110<BR><BR>[TE56-B02-20]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-20.jpg'>"},
+       {"loc":[46.902858,17.874029], "title":"<B>Magányos cédrus</B><BR>Útkereszteződésben kiszáradt, csavart törzsű fa<BR><BR><B>NH:</B> 105<BR><B>Kh:</B> <BR><B>kh:</B> 71<BR><BR>[TE56-B02-22]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-22.jpg'>"},
+       {"loc":[46.905993,17.876958], "title":"<B>A tó gerinces állatai</B><BR>Információs tábla<BR><BR><B>NH:</B> 3<BR><B>Kh:</B> <BR><B>kh:</B> 42<BR><BR>[TE56-B02-23]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-23.jpg'>"},
+       {"loc":[46.905224,17.866877], "title":"<B>Szállodúsor</B><BR>Kerítéssarokhoz legközelebbi sátortetős madárodú<BR><BR><B>NH:</B> 70<BR><B>Kh:</B> <BR><B>kh:</B> 56<BR><BR>[TE56-B02-24]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-24.jpg'>"},
+       {"loc":[46.909232,17.865926], "title":"<B>Madárles</B><BR>Rét közepén alacsony les<BR><BR><B>NH:</B> 87<BR><B>Kh:</B> <BR><B>kh:</B> 46<BR><BR>[TE56-B02-25]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-25.jpg'>"},
+       {"loc":[46.912794,17.871673], "title":"<B>Om</B><BR>Tópart közelében imazászlós kapu <BR><BR><B>NH:</B> 98<BR><B>Kh:</B> <BR><B>kh:</B> 102<BR><BR>[TE56-B02-26]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-26.jpg'>"},
+       {"loc":[46.917898,17.869807], "title":"<B>TIHANY 1.</B><BR>Nedves tónak száraz partján kék kútfej<BR><BR><B>NH:</B> 103<BR><B>Kh:</B> <BR><B>kh:</B> 45<BR><BR>[TE56-B02-27]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-27.jpg'>"},
+       {"loc":[46.916864,17.859776], "title":"<B>Nádasles</B><BR>Nádasban használaton kívüli romos les<BR><BR><B>NH:</B> 120<BR><B>Kh:</B> <BR><B>kh:</B> 43<BR><BR>[TE56-B02-28]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B02-28.jpg'>"},
+       {"loc":[46.919561,17.864859], "title":"<B>Levendulások</B><BR>Biciklis út mellett információs tábla<BR><BR><B>NH:</B> 113<BR><B>Kh:</B> <BR><B>kh:</B> 27<BR><BR>[TE56-B03-01]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-01.jpg'>"},
+       {"loc":[46.923059,17.862712], "title":"<B>Bunker</B><BR>Dombtetőn védett terület tarajos zöld kapuja<BR><BR><B>NH:</B> 15<BR><B>Kh:</B> <BR><B>kh:</B> 28<BR><BR>[TE56-B03-02]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-02.jpg'>"},
+       {"loc":[46.923037,17.862147], "title":"<B>Tetőpont</B><BR>Csúcson csúcsoszlop<BR><BR><B>NH:</B> 110<BR><B>Kh:</B> <BR><B>kh:</B> 87<BR><BR>[TE56-B03-03]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-03.jpg'>"},
+       {"loc":[46.923554,17.871795], "title":"<B>Egy sima, egy fordított</B><BR>Fel- s lejáróval párhuzamos pihenőpad<BR><BR><B>NH:</B> 114<BR><B>Kh:</B> <BR><B>kh:</B> 12<BR><BR>[TE56-B03-04]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-04.jpg'>"},
+       {"loc":[46.922488,17.875962], "title":"<B>Pointer</B><BR>Útelágazásban zöld információs tábla<BR><BR><B>NH:</B> 92<BR><B>Kh:</B> <BR><B>kh:</B> 35<BR><BR>[TE56-B03-05]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-05.jpg'>"},
+       {"loc":[46.920007,17.876536], "title":"<B>Lőállás</B><BR>Nyiladékban raklapból sufnituningolt lőállás<BR><BR><B>NH:</B> 4<BR><B>Kh:</B> <BR><B>kh:</B> 83<BR><BR>[TE56-B03-06]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-06.jpg'>"},
+       {"loc":[46.920661,17.878401], "title":"<B>Szószék</B><BR>Panorámás ösvény mentén fa tákolmány<BR><BR><B>NH:</B> 28<BR><B>Kh:</B> <BR><B>kh:</B> 50<BR><BR>[TE56-B03-07]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-07.jpg'>"},
+       {"loc":[46.922330,17.877164], "title":"<B>Az Óvár</B><BR>Útelágazásban információs tábla<BR><BR><B>NH:</B> 17<BR><B>Kh:</B> <BR><B>kh:</B> 64<BR><BR>[TE56-B03-08]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-08.jpg'>"},
+       {"loc":[46.922714,17.878353], "title":"<B>Remetetelep</B><BR>Jelzett út mellett tornácos sziklalakás<BR><BR><B>NH:</B> 67<BR><B>Kh:</B> <BR><B>kh:</B> 15<BR><BR>[TE56-B03-09]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-09.jpg'>"},
+       {"loc":[46.922642,17.879255], "title":"<B>:)</B><BR>Lőréses barlanglakás bejárata mellett belül nevető fej<BR><BR><B>NH:</B> 48<BR><B>Kh:</B> <BR><B>kh:</B> 63<BR><BR>[TE56-B03-10]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-10.jpg'>"},
+       {"loc":[46.921498,17.885999], "title":"<B>Oroszkút</B><BR>Ösvény mellett kiszáradt kút<BR><BR><B>NH:</B> 47<BR><B>Kh:</B> <BR><B>kh:</B> 91<BR><BR>[TE56-B03-11]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-11.jpg'>"},
+       {"loc":[46.918305,17.890100], "title":"<B>Don Quijote</B><BR>Út mellett malomszerű épület<BR><BR><B>NH:</B> 2<BR><B>Kh:</B> <BR><B>kh:</B> 108<BR><BR>[TE56-B03-12]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-12.jpg'>"},
+       {"loc":[46.919372,17.886797], "title":"<B>T2</B><BR>Út végén dróthálós kapu biciklilakattal<BR><BR><B>NH:</B> 101<BR><B>Kh:</B> <BR><B>kh:</B> 92<BR><BR>[TE56-B03-13]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-13.jpg'>"},
+       {"loc":[46.917223,17.886912], "title":"<B>205 m</B><BR>Keresztút 12. állomása<BR><BR><B>NH:</B> 25<BR><B>Kh:</B> <BR><B>kh:</B> 22<BR><BR>[TE56-B03-14]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-14.jpg'>"},
+       {"loc":[46.920884,17.883758], "title":"<B>Óvár 10</B><BR>Kapu előtt egy oszlop tetején üldégélő faragott állat<BR><BR><B>NH:</B> 65<BR><B>Kh:</B> <BR><B>kh:</B> 77<BR><BR>[TE56-B03-15]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-15.jpg'>"},
+       {"loc":[46.921292,17.881291], "title":"<B>T3</B><BR>Domboldalban legurított kábeldob<BR><BR><B>NH:</B> 39<BR><B>Kh:</B> <BR><B>kh:</B> 97<BR><BR>[TE56-B03-16]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-16.jpg'>"},
+       {"loc":[46.918255,17.880650], "title":"<B>Szedett-vedett</B><BR>Jelzett út mellett kerítés romos ÉNy-i sarka<BR><BR><B>NH:</B> 108<BR><B>Kh:</B> <BR><B>kh:</B> 57<BR><BR>[TE56-B03-17]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-17.jpg'>"},
+       {"loc":[46.917127,17.880802], "title":"<B>Puszkász</B><BR>Műfüves focipálya mellett lelátópadok<BR><BR><B>NH:</B> 57<BR><B>Kh:</B> <BR><B>kh:</B> 26<BR><BR>[TE56-B03-18]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-18.jpg'>"},
+       {"loc":[46.917053,17.877474], "title":"<B>Fogadóállomás</B><BR>Beton placcon barna fém konténer kukucska lyukakat tartalmazó fém lemeze<BR><BR><B>NH:</B> 109<BR><B>Kh:</B> <BR><B>kh:</B> 106<BR><BR>[TE56-B03-19]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-19.jpg'>"},
+       {"loc":[46.915393,17.874433], "title":"<B>Nekem 8</B><BR>Földbevájt boltíves kőpince rom<BR><BR><B>NH:</B> 24<BR><B>Kh:</B> <BR><B>kh:</B> 10<BR><BR>[TE56-B03-20]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-20.jpg'>"},
+       {"loc":[46.912175,17.873280], "title":"<B>Csóbor</B><BR>Erdő szélén öreg nádtetős kőpince<BR><BR><B>NH:</B> 55<BR><B>Kh:</B> <BR><B>kh:</B> 37<BR><BR>[TE56-B03-21]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-21.jpg'>"},
+       {"loc":[46.911316,17.873979], "title":"<B>Oldschool</B><BR>Kereszteződés közelében rozsdás fém tábla<BR><BR><B>NH:</B> 102<BR><B>Kh:</B> <BR><B>kh:</B> 14<BR><BR>[TE56-B03-22]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-22.jpg'>"},
+       {"loc":[46.913801,17.875301], "title":"<B>Bokorerdő</B><BR>Külső-tóra panorámás ösvény mentén színes információs tábla<BR><BR><B>NH:</B> 44<BR><B>Kh:</B> <BR><B>kh:</B> 111<BR><BR>[TE56-B03-23]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-23.jpg'>"},
+       {"loc":[46.915194,17.875639], "title":"<B>Tóralátó</B><BR>Jelzett út mellett jelzéssel ellátott sziklaszirt<BR><BR><B>NH:</B> 82<BR><B>Kh:</B> <BR><B>kh:</B> 33<BR><BR>[TE56-B03-24]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-24.jpg'>"},
+       {"loc":[46.914359,17.875493], "title":"<B>Geológiai formáció</B><BR>Keskeny ösvény mellett szélmarta sziklák<BR><BR><B>NH:</B> 93<BR><B>Kh:</B> <BR><B>kh:</B> 13<BR><BR>[TE56-B03-25]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-25.jpg'>"},
+       {"loc":[46.916252,17.877405], "title":"<B>R.I.P BRO</B><BR>Szikla tűzrakó előtt öreg asztal és padok<BR><BR><B>NH:</B> 40<BR><B>Kh:</B> <BR><B>kh:</B> 18<BR><BR>[TE56-B03-26]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B03-26.jpg'>"},
+       {"loc":[46.925897,17.860287], "title":"<B>Eau de Tihany</B><BR>Útelágazásban levendulamező információs táblája<BR><BR><B>NH:</B> 14<BR><B>Kh:</B> <BR><B>kh:</B> 100<BR><BR>[TE56-B04-01]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-01.jpg'>"},
+       {"loc":[46.923898,17.869485], "title":"<B>Kalandsziget</B><BR>Sétány mellett játszós, mászós hely<BR><BR><B>NH:</B> 86<BR><B>Kh:</B> <BR><B>kh:</B> 20<BR><BR>[TE56-B04-02]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-02.jpg'>"},
+       {"loc":[46.923616,17.884108], "title":"<B>Kapitányom</B><BR>Parti sétány mellett hajós emlékhely<BR><BR><B>NH:</B> 6<BR><B>Kh:</B> <BR><B>kh:</B> 90<BR><BR>[TE56-B04-03]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-03.jpg'>"},
+       {"loc":[46.917291,17.891947], "title":"<B>Közadakozásból</B><BR>A magyar nép nagy jótevőjének monumentális emlékműve<BR><BR><B>NH:</B> 41<BR><B>Kh:</B> <BR><B>kh:</B> 96<BR><BR>[TE56-B04-04]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-04.jpg'>"},
+       {"loc":[46.917129,17.895417], "title":"<B>Port</B><BR>Móló végén zöld-fehér oszlop firkált lakatja<BR><BR><B>NH:</B> 75<BR><B>Kh:</B> <BR><B>kh:</B> 25<BR><BR>[TE56-B04-05]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-05.jpg'>"},
+       {"loc":[46.914117,17.889228], "title":"<B>Abbey</B><BR>Tér frekventált helyén bronz makett<BR><BR><B>NH:</B> 49<BR><B>Kh:</B> <BR><B>kh:</B> 41<BR><BR>[TE56-B04-06]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-06.jpg'>"},
+       {"loc":[46.914166,17.888751], "title":"<B>Csalkert</B><BR>Dombtetőn örökzöld labirintus<BR><BR><B>NH:</B> 95<BR><B>Kh:</B> <BR><B>kh:</B> 66<BR><BR>[TE56-B04-07]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-07.jpg'>"},
+       {"loc":[46.908585,17.887659], "title":"<B>Hol a kolonc?</B><BR>Út mellett kút, beton vályúval<BR><BR><B>NH:</B> 118<BR><B>Kh:</B> <BR><B>kh:</B> 61<BR><BR>[TE56-B04-08]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-08.jpg'>"},
+       {"loc":[46.906786,17.882533], "title":"<B>Élet a nádason túl</B><BR>Tómederben vízből előbukkant tuskósor<BR><BR><B>NH:</B> 5<BR><B>Kh:</B> <BR><B>kh:</B> 84<BR><BR>[TE56-B04-09]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-09.jpg'>"},
+       {"loc":[46.910577,17.877032], "title":"<B>Csacsiitató</B><BR>Sétaút mellett, nádtetős kunyhó oldalában fém szerkezet<BR><BR><B>NH:</B> 36<BR><B>Kh:</B> <BR><B>kh:</B> 58<BR><BR>[TE56-B04-10]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-10.jpg'>"},
+       {"loc":[46.911319,17.882160], "title":"<B>Madárvilág</B><BR>Töltésen információs tábla<BR><BR><B>NH:</B> 16<BR><B>Kh:</B> <BR><B>kh:</B> 30<BR><BR>[TE56-B04-11]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B04-11.jpg'>"},
+       {"loc":[46.901723,17.886007], "title":"<B>Nekeresd</B><BR>Turistaút alatt jelleghatáron, alacsony MPK határkő<BR><BR><B>NH:</B> 85<BR><B>Kh:</B> <BR><B>kh:</B> 107<BR><BR>[TE56-B05-01]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-01.jpg'>"},
+       {"loc":[46.901082,17.886207], "title":"<B>ABLOY</B><BR>Csúcson mérőkő<BR><BR><B>NH:</B> 111<BR><B>Kh:</B> <BR><B>kh:</B> 48<BR><BR>[TE56-B05-02]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-02.jpg'>"},
+       {"loc":[46.896896,17.883414], "title":"<B>Útonálló</B><BR>Jelzett ösvényre dőlt nagy kiszáradt fenyő<BR><BR><B>NH:</B> 117<BR><B>Kh:</B> <BR><B>kh:</B> 29<BR><BR>[TE56-B05-03]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-03.jpg'>"},
+       {"loc":[46.895146,17.883469], "title":"<B>A jellegtelen jellegfa</B><BR>Derékba tört tölgy mellett körbezárt terület<BR><BR><B>NH:</B> 22<BR><B>Kh:</B> <BR><B>kh:</B> 118<BR><BR>[TE56-B05-04]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-04.jpg'>"},
+       {"loc":[46.904747,17.887941], "title":"<B>Ló állás</B><BR>Bozótos mögött fedett, kétlábú fém itató<BR><BR><B>NH:</B> 83<BR><B>Kh:</B> <BR><B>kh:</B> 114<BR><BR>[TE56-B05-05]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-05.jpg'>"},
+       {"loc":[46.904980,17.883818], "title":"<B>Gejzírmező</B><BR>Lépcső alján információs tábla<BR><BR><B>NH:</B> 18<BR><B>Kh:</B> <BR><B>kh:</B> 72<BR><BR>[TE56-B05-06]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-06.jpg'>"},
+       {"loc":[46.902846,17.881135], "title":"<B>Számos</B><BR>Ösvény mellett sziklás kilátókúp<BR><BR><B>NH:</B> 71<BR><B>Kh:</B> <BR><B>kh:</B> 4<BR><BR>[TE56-B05-07]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-07.jpg'>"},
+       {"loc":[46.901805,17.881726], "title":"<B>Forráspont</B><BR>É-D tájolású sziklacsoport legmagasabb pontja<BR><BR><B>NH:</B> 72<BR><B>Kh:</B> <BR><B>kh:</B> 80<BR><BR>[TE56-B05-08]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-08.jpg'>"},
+       {"loc":[46.902057,17.883465], "title":"<B>Bújócska</B><BR>Átjáró szikla tetején, kettéágazó törzsű fán tábla<BR><BR><B>NH:</B> 7<BR><B>Kh:</B> <BR><B>kh:</B> 34<BR><BR>[TE56-B05-09]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-09.jpg'>"},
+       {"loc":[46.901719,17.883112], "title":"<B>Gombaszikla</B><BR>Ösvény mentén egyensúlyozó sziklatömb<BR><BR><B>NH:</B> 91<BR><B>Kh:</B> <BR><B>kh:</B> 94<BR><BR>[TE56-B05-10]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-10.jpg'>"},
+       {"loc":[46.901305,17.881708], "title":"<B>Kígyóbarlang</B><BR>Jelzett ösvény mellett kő kuckó<BR><BR><B>NH:</B> 32<BR><B>Kh:</B> <BR><B>kh:</B> 62<BR><BR>[TE56-B05-11]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-11.jpg'>"},
+       {"loc":[46.900604,17.883354], "title":"<B>Tölgyfales</B><BR>Erdő szélén rozoga les<BR><BR><B>NH:</B> 58<BR><B>Kh:</B> <BR><B>kh:</B> 86<BR><BR>[TE56-B05-12]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-12.jpg'>"},
+       {"loc":[46.898400,17.879634], "title":"<B>Life4Oak</B><BR>Öreg tölgyek árnyékában információs tábla<BR><BR><B>NH:</B> 60<BR><B>Kh:</B> <BR><B>kh:</B> 40<BR><BR>[TE56-B05-13]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-13.jpg'>"},
+       {"loc":[46.900762,17.875739], "title":"<B>Iáá-iáááá</B><BR>Tölgyerdő sarkán kb. 10 cm magas határkő<BR><BR><B>NH:</B> 90<BR><B>Kh:</B> <BR><B>kh:</B> 105<BR><BR>[TE56-B05-14]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-14.jpg'>"},
+       {"loc":[46.897591,17.877125], "title":"<B>Jancsi és Juliska</B><BR>Erdő szélén nádtetős házikó<BR><BR><B>NH:</B> 45<BR><B>Kh:</B> <BR><B>kh:</B> 11<BR><BR>[TE56-B05-15]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-15.jpg'>"},
+       {"loc":[46.896295,17.872065], "title":"<B>Fabudi</B><BR>Erdőben hátára borult fa szerkezet<BR><BR><B>NH:</B> 76<BR><B>Kh:</B> <BR><B>kh:</B> 1<BR><BR>[TE56-B05-16]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-16.jpg'>"},
+       {"loc":[46.896481,17.879036], "title":"<B>Cornus</B><BR>Kúp peremén mellmagasságban elágazó magányos tölgy<BR><BR><B>NH:</B> 56<BR><B>Kh:</B> <BR><B>kh:</B> 49<BR><BR>[TE56-B05-17]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-17.jpg'>"},
+       {"loc":[46.895099,17.880794], "title":"<B>Bonsai kő</B><BR>Kis csúcs oldalában jobb lábfejet formázó sziklatömb<BR><BR><B>NH:</B> 89<BR><B>Kh:</B> <BR><B>kh:</B> 78<BR><BR>[TE56-B05-18]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B05-18.jpg'>"},
+       {"loc":[46.916683,17.888381], "title":"<B>Echo</B><BR>Visszhangos dombon legelésző birkanyáj<BR><BR><B>NH:</B> 52<BR><B>Kh:</B> <BR><B>kh:</B> 85<BR><BR>[TE56-B06-01]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-01.jpg'>"},
+       {"loc":[46.914916,17.889177], "title":"<B>A pöttyös csokoládét...</B><BR>Kő mellvéden üldögélő dagadt madár<BR><BR><B>NH:</B> 88<BR><B>Kh:</B> <BR><B>kh:</B> 104<BR><BR>[TE56-B06-02]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-02.jpg'>"},
+       {"loc":[46.895951,17.887274], "title":"<B>Stopposoknak</B><BR>Út mellett panorámás kocsibeálló karám<BR><BR><B>NH:</B> 20<BR><B>Kh:</B> <BR><B>kh:</B> 116<BR><BR>[TE56-B06-03]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-03.jpg'>"},
+       {"loc":[46.899950,17.889929], "title":"<B>Borárium</B><BR>Betonút mellett teraszos pince<BR><BR><B>NH:</B> 42<BR><B>Kh:</B> <BR><B>kh:</B> 117<BR><BR>[TE56-B06-04]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-04.jpg'>"},
+       {"loc":[46.902935,17.896726], "title":"<B>T1</B><BR>Út végén szép kilátás padokkal<BR><BR><B>NH:</B> 63<BR><B>Kh:</B> <BR><B>kh:</B> 119<BR><BR>[TE56-B06-05]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-05.jpg'>"},
+       {"loc":[46.899897,17.896040], "title":"<B>Pepicon</B><BR>Szűk lejárón zöld kapuhoz közeli csatorna fedlap<BR><BR><B>NH:</B> 64<BR><B>Kh:</B> <BR><B>kh:</B> 120<BR><BR>[TE56-B06-06]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-06.jpg'>"},
+       {"loc":[46.898347,17.889457], "title":"<B>1888</B><BR>Út mellett kőkereszt<BR><BR><B>NH:</B> 33<BR><B>Kh:</B> <BR><B>kh:</B> 54<BR><BR>[TE56-B06-07]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-07.jpg'>"},
+       {"loc":[46.894047,17.892363], "title":"<B>Vaddisznós-kút</B><BR>Töltés mellett beton kútgyűrű<BR><BR><B>NH:</B> 99<BR><B>Kh:</B> <BR><B>kh:</B> 51<BR><BR>[TE56-B06-08]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-08.jpg'>"},
+       {"loc":[46.890761,17.891109], "title":"<B>Vaddisznó tanya</B><BR>Erdő szélén kék fedelű beton műtárgy<BR><BR><B>NH:</B> 61<BR><B>Kh:</B> <BR><B>kh:</B> 39<BR><BR>[TE56-B06-09]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-09.jpg'>"},
+       {"loc":[46.907502,17.892012], "title":"<B>Szívküldi</B><BR>Meredek hegyoldalban öreg pad és asztal<BR><BR><B>NH:</B> 51<BR><B>Kh:</B> <BR><B>kh:</B> 31<BR><BR>[TE56-B06-10]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-10.jpg'>"},
+       {"loc":[46.906794,17.892232], "title":"<B>Pontvadászat</B><BR>Pad installáció szép kilátással<BR><BR><B>NH:</B> 116<BR><B>Kh:</B> <BR><B>kh:</B> 32<BR><BR>[TE56-B06-11]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-11.jpg'>"},
+       {"loc":[46.904398,17.893175], "title":"<B>Ködben, mint a szürke szamár...</B><BR>Fenyőfán zöld odú<BR><BR><B>NH:</B> 119<BR><B>Kh:</B> <BR><B>kh:</B> 2<BR><BR>[TE56-B06-12]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-12.jpg'>"},
+       {"loc":[46.903710,17.894308], "title":"<B>Telekhatár</B><BR>Bozótos csúcs alatt fém kapu<BR><BR><B>NH:</B> 37<BR><B>Kh:</B> <BR><B>kh:</B> 24<BR><BR>[TE56-B06-13]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B06-13.jpg'>"},
+       {"loc":[46.892496,17.885194], "title":"<B>Avas szőlő</B><BR>Út mellett szőlőfürtös kapu<BR><BR><B>NH:</B> 96<BR><B>Kh:</B> <BR><B>kh:</B> 99<BR><BR>[TE56-B07-01]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B07-01.jpg'>"},
+       {"loc":[46.899908,17.896506], "title":"<B>Shalosh</B><BR>Bejárat mellett színes házszámtábla-rengeteg<BR><BR><B>NH:</B> 9<BR><B>Kh:</B> <BR><B>kh:</B> 112<BR><BR>[TE56-B07-02]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B07-02.jpg'>"},
+       {"loc":[46.893066,17.893407], "title":"<B>Biohazard</B><BR>Erdei ojjektum frissebben festett zöld kapuja<BR><BR><B>NH:</B> 31<BR><B>Kh:</B> <BR><B>kh:</B> 7<BR><BR>[TE56-B07-03]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B07-03.jpg'>"},
+       {"loc":[46.891149,17.887414], "title":"<B>Füstbe ment terv</B><BR>Teraszos partoldalban szocreál főzőhely<BR><BR><B>NH:</B> 73<BR><B>Kh:</B> <BR><B>kh:</B> 79<BR><BR>[TE56-B07-04]<BR>------------------------------------------------------------------------<BR><IMG SRC='TE56-B07-04.jpg'>"}
+	];
+var Kh_data = [
+	];
+
+// +++++ Itt végigmegyünk az NH_data tömbön és hozzáadjuk a markereket a nagyhalal_tp layer-hez
+  for(i in NH_data) {
+		var title = NH_data[i].title;
+    var loc = NH_data[i].loc;
+    var marker = new L.circleMarker(new L.latLng(loc), {color: 'red', weight: 1, fillOpacity: 0.3}, {title: title});
+		marker.bindPopup(title);
+    marker.setRadius(6);
+    marker.addTo(allMarkers);
+		nagyhalal_tp.addLayer(marker);
+	}
+// +++++ Itt definiáljuk a függvényt, amely kijavítja az IMG SRC hivatkozásokat az online tárolóra
+function fixImgSrcInTitle(title) {
+    return title.replace(/<IMG\s+SRC=['"]([^'"]+)['"]\s*>/gi, function(_, src){
+        var name = src.split('/').pop();
+        return "<IMG SRC='https://tuleloverseny.hu/file/" + name + "'>";
+    });
+}
+// +++++ Itt alkalmazzuk a fixImgSrcInTitle függvényt a kh_data elemein
+if (typeof kh_data !== "undefined" && kh_data && kh_data.length) {
+    for (var _j = 0; _j < kh_data.length; _j++) {
+        if (kh_data[_j].title) kh_data[_j].title = fixImgSrcInTitle(kh_data[_j].title);
+    }
+}
+// +++++ Itt definiáljuk a függvényt, amely kinyeri a KH számot a title-ból
+function getKhNumber(title) {
+	var m = title.match(/kh:<\/B>\s*(\d+)/i);
+	return m ? parseInt(m[1], 10) : null;
+}
+// +++++ Itt definiáljuk a függvényt, amely ellenőrzi, hogy két ring szomszédos-e
+function sameOrNeighbours(ringA, ringB) {
+	if(ringA == ringB) {
+	return true;
+	}
+	var smaller = (ringA < ringB) ? ringA : ringB;
+	var larger = (ringA > ringB) ? ringA : ringB;
+	return (
+	( (smaller == 1) && (larger == 2)) ||
+	( (smaller == 2) && (larger == 3)) ||
+	( (smaller == 3) && (larger == 4)) ||
+	( (smaller == 4) && (larger == 5)) ||
+	( (smaller == 5) && (larger == 10)) ||
+	( (smaller == 6) && (larger == 7)) ||
+	( (smaller == 7) && (larger == 8)) ||
+	( (smaller == 8) && (larger == 9)) ||
+	( (smaller == 9) && (larger == 10)) ||
+	( (smaller == 1) && (larger == 6))
+	);
+}
+// +++++ Itt definiáljuk a függvényt, amely kiszámítja két pont közötti távolságot
+function getDistance(locA, locB) {
+	var latDiff = locA[0] - locB[0];
+	var lonDiff = locA[1] - locB[1];
+	return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
+}
+// +++++ Itt definiáljuk a színeket a különböző ring-ekhez
+var ringColors = {
+	1: "yellow",
+	2: "orange",
+	3: "red",
+	4: "purple",
+	5: "blue",
+	6: "cyan",
+	7: "green",
+	8: "lime",
+	9: "pink",
+	10: "brown"
+};
+// +++++ Itt definiáljuk a rings tömböt, amely tartalmazza a különböző ring-ek KH értékeit
+var rings = [
+	[54,48,116,29,72,94,62,4,11,71,1],
+	[12,63,97,26,33,58,110,88,101,47,89,6,55,53,3,60,100,87,28],
+	[90,92,108,96,25,31,24,107,117,40,105,70,73,36,38,20,35,50],
+	[104,41,39,74,113,19,68,56,37,111],
+	[79,8,76,42,84,2,120,7],
+	[91,85,22,77,15,64,83,106,45],
+	[114,34,86,80,49,65,75,21,16,95,17,98,23,44,18,57,30],
+	[59,67,93,69,43,66,61,32,118,78,103,9],
+	[109,5,52,27,14],
+	[119,112,51,99,82,115,81,46,102,10,13]
+];
+// +++++ Itt definiáljuk a sajat tömböt, amely a saját útvonal pontjait tartalmazza
+sajat = [
+	3,
+	53,
+	60,
+	100,
+	87,
+	12,
+	63,
+	26,
+	31,
+	24,
+	117,
+	107,
+	40,
+	105,
+	70,
+	73,
+	36,
+	38,
+	55,
+	6,
+	101,
+	88,
+	1,
+	11,
+	48,
+	54,
+	22,
+	77,
+	114,
+	34,
+	45,
+	106
+]
+// +++++ Itt építjük fel a khToRing objektumot, amely összekapcsolja a KH értékeket a ring-ekkel
+var khToRing = {};
+var count = 0
+for (var ringIndex = 0; ringIndex < rings.length; ringIndex++) {
+	rings[ringIndex].forEach(function(khValue){
+	if(khToRing[khValue] != null) {
+		console.log("két helyen: ", khValue);
+	}
+	khToRing[khValue] = ringIndex + 1;   // gyűrűszám 1-től indul
+	count = count + 1;
+	});
+}
+// console.log("tereppontok száma: ", count);
+// console.log("neighbour: ", sameOrNeighbours(1,3));
+// console.log("neighbour: ", sameOrNeighbours(1,2));
+// console.log("neighbour: ", sameOrNeighbours(1,6));
+
+var khToIndex = {};
+for(i in kh_data) {
+	var kh = getKhNumber(kh_data[i].title);
+	khToIndex[kh] = i
+}
+
+// +++++ Itt összekötjük a sajat tömb pontjait vastag vörös vonallal sorrendben
+for (var k = 0; k < sajat.length - 1; k++) {
+    var khA = sajat[k];
+    var khB = sajat[k + 1];
+    
+    var locA = kh_data[khToIndex[khA]].loc;
+    var locB = kh_data[khToIndex[khB]].loc;
+    
+    var seg = L.polyline(
+        [locA, locB],
+        {color: "red", weight: 6, opacity: 1, dashArray: '5, 5'}
+    ).addTo(map);
+}
+// +++++ Itt alkalmazzuk a Prim algoritmust minden ring-re a minimális feszítőfa létrehozásához
+for (var ringIndex = 0; ringIndex < rings.length; ringIndex++) {
+    var indices = rings[ringIndex];
+    if (indices.length < 2) continue; // üres vagy 1 pontú ring
+
+    // Prim algoritmusa: kezdj az első ponttal
+    var connected = {}; // mely pontok már csatolódtak
+    connected[0] = true;
+    var edges = []; // az összekötések (élek)
+
+    // amíg nem minden pont csatolódott
+    while (Object.keys(connected).length < indices.length) {
+        var minDist = Infinity;
+        var bestI = -1, bestJ = -1;
+
+        // keress a legközelebbi párost: egyik már csatolt, másik még nem
+        for (var i = 0; i < indices.length; i++) {
+            if (!connected[i]) continue; // i már csatolt
+
+            for (var j = 0; j < indices.length; j++) {
+                if (connected[j]) continue; // j még nincs csatolva
+                
+                var dist = getDistance(
+                    kh_data[khToIndex[indices[i]]].loc,
+                    kh_data[khToIndex[indices[j]]].loc
+                );
+                if (dist < minDist) {
+                    minDist = dist;
+                    bestI = i;
+                    bestJ = j;
+                }
+            }
+        }
+
+        // csatold a legközelebbi pontot
+        if (bestI >= 0 && bestJ >= 0) {
+            connected[bestJ] = true;
+            edges.push({from: bestI, to: bestJ});
+            
+            // rajzold a vonalat
+            var seg = L.polyline(
+                [
+                    kh_data[khToIndex[indices[bestI]]].loc,
+                    kh_data[khToIndex[indices[bestJ]]].loc
+                ],
+                {color: ringColors[ringIndex + 1], weight: 2}
+            ).addTo(map);
+        }
+    }
+}
+
+// +++++ Itt létrehozzuk a kapcsolatokat a szomszédos ring-ek között, ha a távolság kevesebb mint 1km
+var drawnPairs = {}; // duplikátumok elkerüléséhez
+
+for (var i = 0; i < kh_data.length; i++) {
+    var khA = getKhNumber(kh_data[i].title);
+    var ringA = khToRing[khA];
+    var locA = kh_data[i].loc;
+    
+    for (var j = i + 1; j < kh_data.length; j++) {
+        var khB = getKhNumber(kh_data[j].title);
+        var ringB = khToRing[khB];
+        var locB = kh_data[j].loc;
+        
+        // Ellenőrizd: különböző ring-ben, szomszédos, és < 1km távolság
+        if (ringA && ringB && ringA !== ringB && sameOrNeighbours(ringA, ringB)) {
+            var dist = getDistance(locA, locB);
+            // 500m ~ 0.0045 fok (durva becslés)
+            if (dist < 0.0045) {
+                var pairKey = Math.min(khA, khB) + "_" + Math.max(khA, khB);
+                if (!drawnPairs[pairKey]) {
+                    drawnPairs[pairKey] = true;
+                    
+                    var seg = L.polyline(
+                        [locA, locB],
+                        {color: "black", weight: 2, opacity: 1}
+                    ).addTo(map);
+                }
+            }
+        }
+    }
+}
+// +++++ Itt végigmegyünk a kh_data tömbön és hozzáadjuk a markereket a kishalal_tp layer-hez színesen a ring alapján
+  for(i in kh_data) {
+    var title = kh_data[i].title;
+    var loc = kh_data[i].loc;
+
+    var kh = getKhNumber(title);
+    var ringId = khToRing[kh] || 0;   // 0 = nincs gyűrűben
+    var color = ringColors[ringId] || "gray"; // fallback
+
+    var marker = new L.circleMarker(new L.latLng(loc), {color: color, weight: 1, fillOpacity: 1}, {title: title});
+		marker.bindPopup(title);
+    marker.setRadius(6);
+    marker.addTo(allMarkers);
+		kishalal_tp.addLayer(marker);
+	}
+// +++++ Itt végigmegyünk a Kh_data tömbön és hozzáadjuk a markereket a kozephalal_tp layer-hez
+  for(i in Kh_data) {
+		var title = Kh_data[i].title;
+    var loc = Kh_data[i].loc;
+    var marker = new L.circleMarker(new L.latLng(loc), {color: 'green', weight: 1, fillOpacity: 0.3}, {title: title});
+		marker.bindPopup(title);
+    marker.setRadius(6);
+    marker.addTo(allMarkers);
+		kozephalal_tp.addLayer(marker);
+	}
+// +++++ Itt hozzáadjuk a keresési kontrollt a nagyhalal_tp layer-hez
+	     		var controlSearch = new L.Control.Search({
+	     		  position:'topleft',
+	     		  layer: nagyhalal_tp,
+	     		  propertyName: 'title',
+	     		  zoom: 12,
+	     		  minLength: 2,
+	     		  text: 'Kereses...',
+	     		  textCancel: 'Megsem',
+	     		  textErr: 'Nincs talalat'
+	     		}).addTo(map);
+// +++++ Itt létrehozzuk a csapatok layer csoportjait
+	     var nagyhalal_cs = new L.LayerGroup();
+	     var kozephalal_cs = new L.LayerGroup();
+	     var kishalal_cs = new L.LayerGroup();
+// +++++ Itt beállítjuk a térkép nézetét az összes marker befoglalására
+	      map.fitBounds(allMarkers.getBounds());
+// +++++ Itt hozzáadjuk az alapértelmezett térképréteget (Turistautak)
+	      map.addLayer(tu);
+// +++++ Itt definiáljuk a baseMaps és overlays objektumokat a layer kontroll számára
+				var baseMaps = [{
+	                       groupName : "Térképek",
+									       layers    : {
+	                         "Turistautak" : tu,
+	                         "OpenStreetMap" : osm,
+	                         "OpenTopoMap" : otm,
+	                         "Thunderforest Landscape" : tf,
+	                         "Thunderforest Pioneer" : tfp,
+	                         "Thunderforest MobileAtlas" : tfm,
+	                         "Esri Satellite" : esrisat,
+	                         "Esri Topographic" : esrit,
+	                         "Esri Street" : esris,
+	                         "CyclOSM" : cyclo,
+	                         "CartoDB Light" : cdbl,
+	                         "CartoDB Light NoLabels" : cdbln,
+	                         "CartoDB Dark" : cdbd,
+	                         "TopPlusOpen Color" : tpoc,
+	                         "TopPlusOpen Grey" : tpog
+									        }
+	                      }
+				];
+				var overlays = [
+								 {
+									groupName : "Tereppontok",
+									expanded : true,
+									layers    : {
+										"NAGYHALÁL"  : nagyhalal_tp,
+										"Középhalál" : kozephalal_tp,
+	                  "kishalál"   : kishalal_tp
+									}
+                             }, {
+									groupName : "Csapatok",
+									expanded : true,
+									layers    : {
+										"NAGYHALÁL"     : nagyhalal_cs,
+										"Középhalál" 	 : kozephalal_cs,
+										"kishalál"	 : kishalal_cs
+									}
+	                             }
+				];
+				var options = {
+					container_width 	: "300px",
+					group_maxHeight     : "80px",
+					//container_maxHeight : "350px",
+					exclusive       	: true
+				};
+// +++++ Itt hozzáadjuk a styled layer kontrollt a térképhez
+	      var control = L.Control.styledLayerControl(baseMaps, overlays, options);
+				map.addControl(control);
+				control.selectGroup("Tereppontok");
+				control.selectGroup("Tereptanok");
+				control.selectGroup("Csapatok");
+// +++++ Itt hozzáadjuk az egyedi kontrollokat a marker méretek növelésére/csökkentésére
+	     		L.control.custom({
+	     				position: 'topright',
+	     				content : '<button type="button" class="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">' +
+	     						  '<span class="h-5 w-5">&plus;</span>' +
+	     						  '</button>',
+	     				events:
+	     				{
+	     					click: function(data)
+	     					{
+	     						nagyhalal_tp.eachLayer(function (layer) {
+	     							layer.setRadius(layer.getRadius() + 1);
+	     							layer.redraw();
+	     						});
+	     					},
+	     				}
+	     			}).addTo(map);
+	     	L.control.custom({
+	     			position: 'topright',
+	     			content : '<button type="button" class="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">' +
+	     					  '<span class="h-5 w-5">&minus;</span>' +
+	     					  '</button>',
+	     			events:
+	     			{
+	     				click: function(data)
+	     				{
+	     					nagyhalal_tp.eachLayer(function (layer) {
+	     						if (layer.getRadius() > 1) {
+	     							layer.setRadius(layer.getRadius() - 1);
+	     							layer.redraw();
+	     						}
+	     					});
+	     				},
+	     			}
+	     		}).addTo(map);
+	     		L.control.custom({
+	     				position: 'topright',
+	     				content : '<button type="button" class="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">' +
+	     						  '<span class="h-5 w-5">&plus;</span>' +
+	     						  '</button>',
+	     				events:
+	     				{
+	     					click: function(data)
+	     					{
+	     						kozephalal_tp.eachLayer(function (layer) {
+	     							layer.setRadius(layer.getRadius() + 1);
+	     							layer.redraw();
+	     						});
+	     					},
+	     				}
+	     			}).addTo(map);
+	     	L.control.custom({
+	     			position: 'topright',
+	     			content : '<button type="button" class="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">' +
+	     					  '<span class="h-5 w-5">&minus;</span>' +
+	     					  '</button>',
+	     			events:
+	     			{
+	     				click: function(data)
+	     				{
+	     					kozephalal_tp.eachLayer(function (layer) {
+	     						if (layer.getRadius() > 1) {
+	     							layer.setRadius(layer.getRadius() - 1);
+	     							layer.redraw();
+	     						}
+	     					});
+	     				},
+	     			}
+	     		}).addTo(map);
+	     		L.control.custom({
+	     				position: 'topright',
+	     				content : '<button type="button" class="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">' +
+	     						  '<span class="h-5 w-5">&plus;</span>' +
+	     						  '</button>',
+	     				events:
+	     				{
+	     					click: function(data)
+	     					{
+	     						kishalal_tp.eachLayer(function (layer) {
+	     							layer.setRadius(layer.getRadius() + 1);
+	     							layer.redraw();
+	     						});
+	     					},
+	     				}
+	     			}).addTo(map);
+	     	L.control.custom({
+	     			position: 'topright',
+	     			content : '<button type="button" class="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">' +
+	     					  '<span class="h-5 w-5">&minus;</span>' +
+	     					  '</button>',
+	     			events:
+	     			{
+	     				click: function(data)
+	     				{
+	     					kishalal_tp.eachLayer(function (layer) {
+	     						if (layer.getRadius() > 1) {
+	     							layer.setRadius(layer.getRadius() - 1);
+	     							layer.redraw();
+	     						}
+	     					});
+	     				},
+	     			}
+	     		}).addTo(map);
+</script>
+  </body>
+</html>
